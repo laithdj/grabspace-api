@@ -1,7 +1,7 @@
 {
-  "name": "realestateinvest-api",
+  "name": "grabspace-api",
   "version": "1.0.0",
-  "description": "Backend Application for realestateinvest",
+  "description": "Backend Application for grabspace",
   "bin": "bin/createNodejsApp.js",
   "main": "src/index.js",
   "repository": "",
