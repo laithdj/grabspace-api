@@ -65,7 +65,17 @@ module.exports = {
       }
     }
     if (filterData?.priceRange) {
-      whereCond['rentPrice'] = filterData.priceRange;
+      let rentPriceWhereCond = {};
+      if (filterData.priceRange.includes('-')) {
+        const rentPrices = filterData.priceRange.split('-');
+        rentPriceWhereCond = { $gte: parseInt(rentPrices[0], 10), $lte: parseInt(rentPrices[1], 10) };
+      } else if (filterData.priceRange == '14000+') {
+        rentPriceWhereCond = { $gt: 14000 };
+      }
+      whereCond['rentPrice'] = rentPriceWhereCond;
+    }
+    if (filterData?.priceRangePeriod) {
+      whereCond['rentPricePeriod'] = filterData.priceRangePeriod;
     }
     if (filterData?.includePrintInstall) {
       whereCond['includePrintInstall'] = filterData.includePrintInstall == 'YES' ? true : false;
