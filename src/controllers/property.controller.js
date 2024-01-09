@@ -25,7 +25,6 @@ module.exports = {
   }),
   createProperty: catchAsync(async (req, res) => {
     console.log('req.files', req.files.images);
-    console.log('req.files.floorPlanImages', req.files.floorPlanImages);
     console.log('req.body', req.body.propertyData);
     const propertyData = JSON.parse(req.body.propertyData);
     const propertyImages = [];
@@ -40,56 +39,21 @@ module.exports = {
         })
       })
     }
-    //propertyData.details.floorPlans
-    const propertyFloorPlans = [];
-    if (propertyData.details.floorPlans?.length > 0) {
-      console.log('propertyData.details.floorPlans', propertyData.details.floorPlans);
-      propertyData.details.floorPlans.forEach((floorPlanValue, floorPlanIndex) => {
-        let imageValues = {};
-        if (req.files.floorPlanImages?.length > 0 && req.files.floorPlanImages[floorPlanIndex] && req.files.floorPlanImages[floorPlanIndex].filename) {
-          imageValues = req.files.floorPlanImages[floorPlanIndex];
-        }
-        propertyFloorPlans.push({
-          title: floorPlanValue.title,
-          imageName: imageValues?.filename || '',
-          path: imageValues?.destination ? `${imageValues.destination}/${imageValues.filename}` : '',
-          originalName: imageValues?.originalname || '',
-          mimeType: imageValues?.mimetype || '',
-          size: imageValues?.size || '',
-        });
-      });
-    }
     const propertyInsertData = {
       userId: req.user.id,
-      propertyType: propertyData.general.type,
       title: propertyData.general.title,
-      areaName: propertyData.general.areaName,
       city: propertyData.general.city,
       address: propertyData.general.address,
       description: propertyData.general.description,
-      propertyStatus: propertyData.general.propertyStatus,
-      bedrooms: propertyData.details.bedrooms,
-      bathrooms: propertyData.details.bathrooms,
-      propertyAge: propertyData.details.propertyAge,
-      landSize: propertyData.details.landSize,
-      area: propertyData.details.area,
-      salePrice: propertyData.details.salePrice,
-      rentYield: propertyData.details.rentYield,
-      weeklyCurrentRent: propertyData.details.weeklyCurrentRent,
-      weeeklyRentalAppraisal: propertyData.details.weeeklyRentalAppraisal,
-      propertyValueGrowth: propertyData.details.propertyValueGrowth,
-      rentalMarketPrice: propertyData.details.rentalMarketPrice,
-      vacancyRate: propertyData.details.vacancyRate,
-      hideSalePrice: propertyData.details.hideSalePrice,
-      parkingAvailable: propertyData.details.parkingAvailable,
-      currentlyTenanted: propertyData.details.currentlyTenanted,
-      fireZone: propertyData.details.fireZone,
-      floodZone: propertyData.details.floodZone,
-      landDAApproved: propertyData.details.landDAApproved,
-      isBodyCorporate: propertyData.details.isBodyCorporate,
-      bodyCorporateValue: propertyData.details.isBodyCorporate ? propertyData.details.bodyCorporateValue : '',
-      amenities: propertyData.details.amenities.length > 0 ? propertyData.details.amenities : [],
-      floorPlans: propertyFloorPlans,
+      spaceType: propertyData.details.spaceType,
+      adShowPerTime: propertyData.details.adShowPerTime,
+      space: propertyData.details.space,
+      sizeHeight: propertyData.details.sizeHeight,
+      sizeWidth: propertyData.details.sizeWidth,
+      rentPrice: propertyData.details.rentPrice,
+      includePrintInstall: propertyData.details.includePrintInstall,
+      traffic: propertyData.details.traffic,
+      viewersPerDay: propertyData.details.viewersPerDay,
       images: propertyImages,
       sellerName: propertyData.sellerDetails.sellerName,
       sellerEmail: propertyData.sellerDetails.sellerEmail,
@@ -102,18 +66,15 @@ module.exports = {
   }),
   updateProperty: catchAsync(async (req, res) => {
     if (!req.params.propertyId) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Property ID Not found.`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `Listing ID Not found.`);
     }
     const existingPropertyDetail = await propertyService.getPropertyById(req.params.propertyId);
     if (!existingPropertyDetail?._id) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Property not found.`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `Listing not found.`);
     }
     const existingImages = existingPropertyDetail.images;
     console.log('existingImages', existingImages);
-    const existingFloorPlans = existingPropertyDetail.floorPlans;
-    console.log('existingFloorPlans', existingFloorPlans);
     console.log('req.files.images', req.files.images);
-    console.log('req.files.floorPlanImages', req.files.floorPlanImages);
     console.log('req.body', req.body.propertyData);
     const propertyData = JSON.parse(req.body.propertyData);
     console.log('propertyData.images', propertyData.images);
@@ -144,90 +105,21 @@ module.exports = {
       }
     }
     console.log('propertyImages', propertyImages);
-    const propertyFloorPlans = [];
-    console.log('req.files.floorPlanImages', req.files.floorPlanImages);
-    console.log('propertyData.details.floorPlans', propertyData.details.floorPlans);
-    if (existingFloorPlans.length > 0) {
-      for (const existingFloorPlanValue of existingFloorPlans) {
-        const isNotTouchedFloorValue = propertyData.details.floorPlans.find(obj => obj._id == existingFloorPlanValue._id);
-        console.log('isNotTouchedFloorValue', isNotTouchedFloorValue);
-        if (!isNotTouchedFloorValue) {
-          if (fs.existsSync(`./${existingFloorPlanValue.path}`)) {
-            fs.unlinkSync(`./${existingFloorPlanValue.path}`);
-          }
-          continue;
-        }
-      }
-    }
-    if (propertyData.details.floorPlans.length > 0) {
-      for (const floorPlanValue of propertyData.details.floorPlans) {
-        if (floorPlanValue.image?._id) {
-          /* IMAGE IS CHANGED */
-          if (!req.files.floorPlanImages?.length) {
-            continue;
-          };
-          const fileInfo = req.files.floorPlanImages.find(obj =>
-            obj.originalname == floorPlanValue.image.requestedFileName &&
-            obj.size == floorPlanValue.image.requestedFileSize &&
-            obj.mimetype == floorPlanValue.image.requestedFileType
-          )
-          if (!fileInfo) {
-            continue;
-          }
-          propertyFloorPlans.push({
-            title: floorPlanValue.title,
-            imageName: fileInfo?.filename || '',
-            path: fileInfo?.destination ? `${fileInfo.destination}/${fileInfo.filename}` : '',
-            originalName: fileInfo?.originalname || '',
-            mimeType: fileInfo?.mimetype || '',
-            size: fileInfo?.size || '',
-          });
-          continue;
-        }
-        let existingItem = existingFloorPlans.find(obj => obj._id == floorPlanValue._id);
-        propertyFloorPlans.push({
-          title: floorPlanValue.title,
-          imageName: existingItem?.imageName || '',
-          path: existingItem?.path || '',
-          originalName: existingItem?.originalName || '',
-          mimeType: existingItem?.mimeType || '',
-          size: existingItem?.size || '',
-        });
-      }
-    }
-    console.log('propertyFloorPlans', propertyFloorPlans);
-    console.log('propertyData.details.bathrooms', propertyData.details.bathrooms);
     const propertyUpdateData = {
       userId: req.user.id,
-      propertyType: propertyData.general.type,
       title: propertyData.general.title,
-      areaName: propertyData.general.areaName,
       city: propertyData.general.city,
       address: propertyData.general.address,
       description: propertyData.general.description,
-      propertyStatus: propertyData.general.propertyStatus,
-      bedrooms: propertyData.details.bedrooms,
-      bathrooms: propertyData.details.bathrooms,
-      propertyAge: propertyData.details.propertyAge,
-      landSize: propertyData.details.landSize,
-      area: propertyData.details.area,
-      salePrice: propertyData.details.salePrice,
-      rentYield: propertyData.details.rentYield,
-      weeklyCurrentRent: propertyData.details.weeklyCurrentRent,
-      weeeklyRentalAppraisal: propertyData.details.weeeklyRentalAppraisal,
-      propertyValueGrowth: propertyData.details.propertyValueGrowth,
-      rentalMarketPrice: propertyData.details.rentalMarketPrice,
-      vacancyRate: propertyData.details.vacancyRate,
-      hideSalePrice: propertyData.details.hideSalePrice,
-      parkingAvailable: propertyData.details.parkingAvailable,
-      currentlyTenanted: propertyData.details.currentlyTenanted,
-      fireZone: propertyData.details.fireZone,
-      floodZone: propertyData.details.floodZone,
-      landDAApproved: propertyData.details.landDAApproved,
-      isBodyCorporate: propertyData.details.isBodyCorporate,
-      bodyCorporateValue: propertyData.details.isBodyCorporate ? propertyData.details.bodyCorporateValue : '',
-      amenities: propertyData.details.amenities.length > 0 ? propertyData.details.amenities : [],
-      floorPlans: propertyFloorPlans,
+      spaceType: propertyData.details.spaceType,
+      adShowPerTime: propertyData.details.adShowPerTime,
+      space: propertyData.details.space,
+      sizeHeight: propertyData.details.sizeHeight,
+      sizeWidth: propertyData.details.sizeWidth,
+      rentPrice: propertyData.details.rentPrice,
+      includePrintInstall: propertyData.details.includePrintInstall,
+      traffic: propertyData.details.traffic,
+      viewersPerDay: propertyData.details.viewersPerDay,
       images: propertyImages,
       sellerName: propertyData.sellerDetails.sellerName,
       sellerEmail: propertyData.sellerDetails.sellerEmail,
@@ -239,11 +131,11 @@ module.exports = {
   }),
   updatePropertyCount: catchAsync(async (req, res) => {
     if (!req.body.propertyId) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Property ID Not found.`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `Listing ID Not found.`);
     }
     const existingPropertyDetail = await propertyService.getPropertyById(req.body.propertyId);
     if (!existingPropertyDetail?._id) {
-      throw new ApiError(httpStatus.BAD_REQUEST, `Property not found.`);
+      throw new ApiError(httpStatus.BAD_REQUEST, `Listing not found.`);
     }
     // const propertyUpdateData = {
     //   userView: existingPropertyDetail.userView + 1,
@@ -270,14 +162,14 @@ module.exports = {
   }),
   getPropertyById: catchAsync(async (req, res) => {
     if (!req.params.propertyId) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Property ID not found');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Listing ID not found');
     }
     const propertyData = await propertyService.getPropertyById(req.params.propertyId);
     res.send(propertyData);
   }),
   getPropertyByIdEditView: catchAsync(async (req, res) => {
     if (!req.params.propertyId) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Property ID not found');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Listing ID not found');
     }
     const propertyData = await propertyService.getPropertyByIdEditView(req.params.propertyId);
     res.send(propertyData);

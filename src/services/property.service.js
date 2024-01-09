@@ -31,19 +31,12 @@ module.exports = {
       userId: userId
     }, {
       title: 1,
-      propertyType: 1,
-      propertyStatus: 1,
       city: 1
     })
-      .populate('propertyType')
-      .populate('city')
-      .populate({ path: "propertyStatus", model: "PropertyStatus" }).exec()
+      .populate('city').exec()
   },
   getPropertyById: async (propertyId) => {
-    return Property.findById(propertyId).populate('propertyType')
-      .populate('amenities')
-      .populate('city')
-      .populate({ path: "propertyStatus", model: "PropertyStatus" }).exec();
+    return Property.findById(propertyId).populate('city').exec();
   },
   getPropertyByIdEditView: async (propertyId) => {
     return Property.findById(propertyId).exec();
@@ -53,68 +46,38 @@ module.exports = {
     if (filterData?.title) {
       whereCond['title'] = { $regex: '.*' + filterData.title + '.*' };
     }
-    if (filterData?.typeId) {
-      whereCond['propertyType'] = filterData.typeId;
-    }
-    if (filterData?.statusId) {
-      whereCond['propertyStatus'] = filterData.statusId;
+    if (filterData?.space) {
+      whereCond['space'] = filterData.space;
     }
     if (filterData?.cityId) {
       whereCond['city'] = filterData.cityId;
     }
-    if (filterData?.bedrooms) {
-      whereCond['bedrooms'] = parseInt(filterData.bedrooms, 10);;
-      if (filterData.bedrooms == '4+') {
-        whereCond['bedrooms'] = { $gt: 4 };
+    if (filterData?.minHeight) {
+      whereCond['sizeHeight'] = { $gte: parseInt(filterData.minHeight, 10) };
+      if (filterData.minHeight == '1000+') {
+        whereCond['sizeHeight'] = { $gte: 1000 };
       }
     }
-    if (filterData?.bathrooms) {
-      whereCond['bathrooms'] = parseInt(filterData.bathrooms, 10);
-      if (filterData.bathrooms == '4+') {
-        whereCond['bathrooms'] = { $gt: 4 };
+    if (filterData?.minWidth) {
+      whereCond['sizeWidth'] = { $gte: parseInt(filterData.minWidth, 10) };
+      if (filterData.minWidth == '1000+') {
+        whereCond['sizeHeight'] = { $gte: 1000 };
       }
     }
-    console.log('filterData?.salePrice', filterData?.salePrice)
-    if (filterData?.salePrice) {
-      const saleWhereCond = {};
-      if (filterData.salePrice.includes('-')) {
-        const salePrices = filterData.salePrice.split('-');
-        saleWhereCond['salePrice'] = { $gte: parseInt(salePrices[0], 10), $lte: parseInt(salePrices[1], 10) };
-      } else if (filterData.salePrice == '1000+') {
-        saleWhereCond['salePrice'] = { $gt: 1000 };
-      }
-      whereCond['$or'] = [
-        { hideSalePrice: true },
-        saleWhereCond
-      ]
+    if (filterData?.priceRange) {
+      whereCond['rentPrice'] = filterData.priceRange;
     }
-    console.log(`whereCond['$or']`, whereCond['$or']);
-    console.log(`whereCond['bathrooms']`, whereCond['bathrooms']);
-    if (filterData?.landDAApproved) {
-      whereCond['landDAApproved'] = false;
-      if (filterData.landDAApproved == 'YES') {
-        whereCond['landDAApproved'] = true;
-      }
+    if (filterData?.includePrintInstall) {
+      whereCond['includePrintInstall'] = filterData.includePrintInstall == 'YES' ? true : false;
     }
-    if (filterData?.amenities?.length) {
-      whereCond['amenities'] = { $in: filterData.amenities };
-    }
-    return Property.find(whereCond)
-      .populate('propertyType')
-      .populate('amenities')
-      .populate('city')
-      .populate({ path: "propertyStatus", model: "PropertyStatus" }).exec();
+    return Property.find(whereCond).populate('city').exec();
   },
   getLatestProperties: async (propertyId) => {
     const whereCond = {};
     if (propertyId) {
       whereCond['_id'] = { $ne: propertyId }
     }
-    return Property.find(whereCond)
-      .populate('propertyType')
-      .populate('amenities')
-      .populate('city')
-      .populate({ path: "propertyStatus", model: "PropertyStatus" }).exec();
+    return Property.find(whereCond).populate('city').exec();
   },
   deletePropertyById: async (propertyId) => {
     if (!propertyId) {
